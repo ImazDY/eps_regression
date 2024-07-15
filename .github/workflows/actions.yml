@@ -1,0 +1,146 @@
+name: Daily Regression
+
+on:
+  workflow_dispatch:
+    inputs:
+      shopLocale:
+         type: choice
+         description: 'Locale where the script runs'
+         required: true
+         options: 
+          - 'US'
+          - 'CN'
+          - 'UK'
+          - 'FR'
+          - 'GR'
+          - 'IT'
+          
+      browser:
+         type: choice
+         description: 'Browser where the script runs'
+         required: true
+         options: 
+          - 'chrome'
+          - 'firefox'
+          - 'safari'
+
+      os:
+         type: choice
+         description: 'Opearting System where the script runs'
+         required: true
+         options: 
+          - 'Windows 10'
+      
+        
+
+jobs:
+  robot_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+
+      with:
+        python-version: '3.12.1' # specify your desired Python version
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install Selenium
+        pip install robotframework
+        pip install webdriver-manager
+        pip install robotframework-seleniumlibrary
+        pip install robotframework-jsonlibrary
+        pip install allure-python-commons
+        pip install allure-robotframework
+        npm install -g allure-commandline --save-dev
+        sudo apt-get install -y zip
+        npm install puppeteer
+      continue-on-error: true
+
+
+    - name: Run Daily Regression
+      run: |
+
+       python -m robot --listener allure_robotframework --outputdir robot/ --variable  platform:"${{ github.event.inputs.os}}" --variable run_on_LT:yes --variable device:${{ github.event.inputs.browser}} --variable shopLocale:${{ github.event.inputs.shopLocale}}  --variable version:17.0  ./Tests/Features/
+       echo "ROBOT_RC=$?" >> "$GITHUB_ENV"
+      continue-on-error: true
+        
+    - name: Generate Allure report
+      run: |
+        allure  generate --single-file ./output/allure
+
+    - name: Archive single html result
+      uses: actions/upload-artifact@v2
+      with:
+        name: allure-test-report
+        path: ./allure-report
+        
+    - name: Get current run date
+      if: always()
+      id: get-date
+      run: echo "run_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV  
+      
+    - name: Submit to Xray
+      if: always()
+      id: xray-upload
+      uses: mikepenz/xray-action@v3.0.4
+      with:
+        username: ${{ secrets.client_id }}
+        password: ${{ secrets.client_secret }}
+        testFormat: "robot"
+        testPaths: "./robot/output.xml"
+        projectKey: "CCMS"
+
+    - name: Create Puppeteer script
+      run: |
+          cat << 'EOF' > screenshot.js
+          const puppeteer = require('puppeteer');
+          const fs = require('fs');
+          (async () => {
+            const browser = await puppeteer.launch();
+            const page = await browser.newPage();
+            await page.goto(`file://${process.cwd()}/allure-report/index.html`);
+            await page.screenshot({ path: 'report.png', fullPage: true });
+            await browser.close();
+          })();
+          EOF
+
+    - name: Run Puppeteer script
+      run: node screenshot.js
+
+    - name: Construct run URL
+      if: always()
+      id: vars
+      run: echo "run_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_ENV
+
+    - name: Construct jira URL
+      if: always()
+      id: varjira
+      run: echo "jira_url=${{ secrets.JIRA_URI }}${{ steps.xray-upload.outputs.testExecKey }}" >> $GITHUB_ENV
+        
+    - name: Send mail
+      if: always()
+      uses: dawidd6/action-send-mail@v3
+      with:
+           server_address: smtp.gmail.com
+           server_port: 465
+           secure: true
+           username: testingmavens3@gmail.com
+           password: ${{ secrets.AppPassword }}
+           subject: ${{ github.event.inputs.shopLocale}} Daily Regression Run Report ${{ env.run_date }}
+           to: imaz.rayees@davidyurman.com, adarsh.aravind@davidyurman.com, amar.salam@davidyurman,
+           from: Testing Mavens <testingmavens3@gmail.com>
+           attachments: ./report.png
+           html_body: |
+               <p><b>Build job of ${{ github.repository }} completed successfully for ${{ github.event.inputs.shopLocale}}!</b></p>
+               <p><b>GitHub Run URL: ${{ env.run_url }}</b></p>
+               <p><b>Jira Test Results: ${{ env.jira_url }}</b></p>
+               <p>Please download the detailed run results from <b>allure-test-report artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}</b></p>
+               
+               <p><b>Result Snapshot</b></p>
+               <img src="cid:report.png" alt="HTML Report Screenshot" />
