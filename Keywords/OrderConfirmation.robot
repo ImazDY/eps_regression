@@ -255,10 +255,18 @@ Navigate to a subcategory
     sleep  10s
     Page should not contain null or NA
 
+Navigate to a subcategory - EPS
+     log to console  Logging out and log back in steps initiated because the order history isn't showing recent order's for automated runs unless some navigation action is done.
+    Mouse Over  id=gifts
+    sleep  3s
+    Mouse Click  id=anniversary-gifts
+    sleep  10s
+    Page should not contain null or NA
+
 
      
 Order id validation in Order History
-    Monkey look around
+    Monkey look around - eps
     Wait Until Element Is Visible    css:#orderCard-${order}  10s
     Scroll Element Into View    css:#orderCard-${order} span:first-child span:first-child
 
@@ -297,6 +305,12 @@ Monkey look around - Affirm
     Logout and log back in - Affirm
     sleep  5s
     Navigate to a subcategory
+    Go to Accounts    Orders & Returns
+
+Monkey look around - eps
+    Logout and log back in
+    sleep  5s
+    Navigate to a subcategory - EPS
     Go to Accounts    Orders & Returns
 
 Order Confirmation Pickup Store page is displayed

@@ -1,5 +1,5 @@
 *** Settings ***
-Test Setup        Run Keywords    Open website    Accept Cookies
+Test Setup        Run Keywords    Open website    Log into EPS  Accept Cookies
 Test Teardown     Run Keywords    Close All Browsers
 Force Tags        Regression    automation
 Library           SeleniumLibrary    screenshot_root_directory=EMBED

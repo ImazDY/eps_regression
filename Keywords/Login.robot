@@ -597,8 +597,10 @@ Register a user and add details
 Logout and log back in
     Logout
     Click on Sign In
-    Fill in Login Form  ${guest_valid}  ${NewUser_Pwd}
+    Fill in Login Form  ${Eps_login_email}  ${Eps_login_password}
     Click on Login
+
+
 
 Logout and log back in - Affirm
     Logout

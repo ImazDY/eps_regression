@@ -221,7 +221,7 @@ Verify order summary in correct in cart page
      ${order_summary_salesTax}   Get Text    xpath:(//p[contains(@class,'text-right order-summary-item-value')])[2]
      Should Be Equal As Strings    ${order_summary_subtotal}    ${PDP_product_1_price}
    IF  '${shopLocale}' in ['US', 'CN']
-      Should Be Equal As Strings    ${order_summary_shipping}    Complimentary
+      Should Be Equal As Strings    ${order_summary_shipping}    $12
       Should Be Equal As Strings    ${order_summary_salesTax}    Calculated at checkout
    ELSE
       Should Be Equal As Strings    ${order_summary_shipping}    Free

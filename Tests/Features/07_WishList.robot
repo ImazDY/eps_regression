@@ -1,5 +1,5 @@
 *** Settings ***
-Test Setup        Run Keywords    Open website   Read Data From JSON File  Close dev tools icon
+Test Setup        Run Keywords    Open website   Read Data From JSON File  Log into EPS
 Test Teardown     Run Keywords    Close All Browsers
 Force Tags        Regression    automation
 Library           SeleniumLibrary    screenshot_root_directory=EMBED
